@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Category__c</fullName>
+    <label>Categoría</label>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Salario</fullName>
+                <default>false</default>
+                <label>Salario</label>
+            </value>
+            <value>
+                <fullName>Freelance</fullName>
+                <default>false</default>
+                <label>Freelance</label>
+            </value>
+            <value>
+                <fullName>Inversiones</fullName>
+                <default>false</default>
+                <label>Inversiones</label>
+            </value>
+            <value>
+                <fullName>Transferencia Recibida</fullName>
+                <default>false</default>
+                <label>Transferencia Recibida</label>
+            </value>
+            <value>
+                <fullName>Premio / Reembolso</fullName>
+                <default>false</default>
+                <label>Premio / Reembolso</label>
+            </value>
+            <value>
+                <fullName>Otros Ingresos</fullName>
+                <default>false</default>
+                <label>Otros Ingresos</label>
+            </value>
+            <value>
+                <fullName>Alimentación</fullName>
+                <default>false</default>
+                <label>Alimentación</label>
+            </value>
+            <value>
+                <fullName>Transporte</fullName>
+                <default>false</default>
+                <label>Transporte</label>
+            </value>
+            <value>
+                <fullName>Hogar</fullName>
+                <default>false</default>
+                <label>Hogar</label>
+            </value>
+            <value>
+                <fullName>Salud</fullName>
+                <default>false</default>
+                <label>Salud</label>
+            </value>
+            <value>
+                <fullName>Entretenimiento</fullName>
+                <default>false</default>
+                <label>Entretenimiento</label>
+            </value>
+            <value>
+                <fullName>Ropa y Calzado</fullName>
+                <default>false</default>
+                <label>Ropa y Calzado</label>
+            </value>
+            <value>
+                <fullName>Educación</fullName>
+                <default>false</default>
+                <label>Educación</label>
+            </value>
+            <value>
+                <fullName>Tecnología</fullName>
+                <default>false</default>
+                <label>Tecnología</label>
+            </value>
+            <value>
+                <fullName>Viajes</fullName>
+                <default>false</default>
+                <label>Viajes</label>
+            </value>
+            <value>
+                <fullName>Suscripciones</fullName>
+                <default>false</default>
+                <label>Suscripciones</label>
+            </value>
+            <value>
+                <fullName>Deudas / Préstamos</fullName>
+                <default>false</default>
+                <label>Deudas / Préstamos</label>
+            </value>
+            <value>
+                <fullName>Otros Gastos</fullName>
+                <default>false</default>
+                <label>Otros Gastos</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

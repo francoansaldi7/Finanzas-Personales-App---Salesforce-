@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Date_Range_Invalid</fullName>
+    <active>true</active>
+    <description>La fecha de la transacción no puede ser anterior al año 2000 ni estar más de un año en el futuro.</description>
+    <errorConditionFormula>OR(Date__c &lt; DATE(2000, 1, 1), Date__c &gt; TODAY() + 365)</errorConditionFormula>
+    <errorMessage>La fecha debe estar entre el 01/01/2000 y un año en el futuro.</errorMessage>
+</ValidationRule>

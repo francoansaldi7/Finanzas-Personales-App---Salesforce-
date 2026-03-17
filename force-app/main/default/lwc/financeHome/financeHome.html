@@ -1,0 +1,299 @@
+<!--
+  @description  Panel de control de Finanzas Personales.
+                Muestra KPIs del mes seleccionado, desglose por categoría
+                y lista de transacciones. Permite agregar y eliminar registros.
+-->
+<template>
+    <div class="fin-home">
+
+        <!-- ── Encabezado ──────────────────────────────────────────────── -->
+        <!-- Header: title, personalised greeting, month navigation arrows, and balance summary -->
+        <div class="fin-header">
+            <div class="fin-header__left">
+                <div class="fin-header__title">Finanzas Personales</div>
+                <div class="fin-header__subtitle">{welcomeMessage}</div>
+                <!-- Month navigation: ‹ prev | current label | next ›
+                     The next button is disabled when viewing the current month -->
+                <div class="fin-header__nav">
+                    <button class="nav-btn" onclick={handlePrevMonth} title="Mes anterior">&#8249;</button>
+                    <span class="nav-month">{monthLabel}</span>
+                    <button class="nav-btn" onclick={handleNextMonth} disabled={isCurrentMonth} title="Mes siguiente">&#8250;</button>
+                </div>
+            </div>
+            <!-- Large balance figure in the top-right; turns red when negative -->
+            <div class="fin-header__right">
+                <div class="header-balance-label">Balance del mes</div>
+                <template lwc:if={isLoadingKpis}>
+                    <lightning-spinner size="small" alternative-text="Cargando"></lightning-spinner>
+                </template>
+                <template lwc:else>
+                    <div class={headerBalanceClass}>{balanceFormatted}</div>
+                </template>
+            </div>
+        </div>
+
+        <!-- ── KPIs ────────────────────────────────────────────────────── -->
+        <!-- Four tiles: Income, Expenses, Net Balance, and Savings Rate.
+             Each shows a spinner until the Apex call resolves. -->
+        <div class="kpi-grid">
+
+            <div class="kpi-tile">
+                <div class="kpi-tile__label">Ingresos</div>
+                <div class="kpi-tile__value value--income">
+                    <template lwc:if={isLoadingKpis}>
+                        <lightning-spinner size="small" alternative-text="Cargando"></lightning-spinner>
+                    </template>
+                    <template lwc:else>{incomeFormatted}</template>
+                </div>
+            </div>
+
+            <div class="kpi-tile">
+                <div class="kpi-tile__label">Gastos</div>
+                <div class="kpi-tile__value value--expense">
+                    <template lwc:if={isLoadingKpis}>
+                        <lightning-spinner size="small" alternative-text="Cargando"></lightning-spinner>
+                    </template>
+                    <template lwc:else>{expensesFormatted}</template>
+                </div>
+            </div>
+
+            <div class="kpi-tile">
+                <div class="kpi-tile__label">Balance Neto</div>
+                <div class={balanceTileClass}>
+                    <template lwc:if={isLoadingKpis}>
+                        <lightning-spinner size="small" alternative-text="Cargando"></lightning-spinner>
+                    </template>
+                    <template lwc:else>{balanceFormatted}</template>
+                </div>
+            </div>
+
+            <div class="kpi-tile">
+                <div class="kpi-tile__label">Tasa de Ahorro</div>
+                <div class="kpi-tile__value value--savings">
+                    <template lwc:if={isLoadingKpis}>
+                        <lightning-spinner size="small" alternative-text="Cargando"></lightning-spinner>
+                    </template>
+                    <template lwc:else>{savingsRateFormatted}</template>
+                </div>
+                <div class="savings-track">
+                    <div class="savings-fill" style={savingsBarStyle}></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── Acciones rápidas ─────────────────────────────────────────── -->
+        <!-- Two shortcut buttons — data-type pre-selects the transaction type in the modal -->
+        <div class="quick-actions">
+            <button class="action-btn action-btn--income" onclick={handleOpenModal} data-type="Ingreso">
+                ↑ &nbsp;Registrar Ingreso
+            </button>
+            <button class="action-btn action-btn--expense" onclick={handleOpenModal} data-type="Gasto">
+                ↓ &nbsp;Registrar Gasto
+            </button>
+        </div>
+
+        <!-- ── Contenido principal ──────────────────────────────────────── -->
+        <!-- Two-panel row: category breakdown (left) and transaction list (right) -->
+        <div class="main-content">
+
+            <!-- Desglose por categoría: horizontal bar chart of expense categories -->
+            <div class="content-panel">
+                <div class="panel-header">
+                    <lightning-icon icon-name="utility:chart" size="x-small" class="panel-icon"></lightning-icon>
+                    <span class="panel-header__title">Gastos por Categoría</span>
+                </div>
+                <div class="panel-body">
+                    <template lwc:if={isLoadingBreakdown}>
+                        <div class="loading-wrap">
+                            <lightning-spinner size="medium" alternative-text="Cargando..."></lightning-spinner>
+                        </div>
+                    </template>
+                    <template lwc:elseif={hasBreakdown}>
+                        <template for:each={categoryBreakdown} for:item="cat">
+                            <div key={cat.category} class="cat-row">
+                                <div class="cat-row__header">
+                                    <span class="cat-row__name">{cat.category}</span>
+                                    <span class="cat-row__amount">{cat.formattedTotal}</span>
+                                </div>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style={cat.barStyle}></div>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    <template lwc:else>
+                        <div class="empty-state">
+                            <lightning-icon icon-name="utility:smiley_and_people" size="medium" class="empty-icon"></lightning-icon>
+                            <p>Sin gastos este mes.</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Lista de transacciones: scrollable list of all transactions for the month -->
+            <div class="content-panel">
+                <div class="panel-header">
+                    <lightning-icon icon-name="utility:list" size="x-small" class="panel-icon"></lightning-icon>
+                    <span class="panel-header__title">Transacciones</span>
+                    <span class="txn-count">{transactionCount}</span>
+                </div>
+                <div class="panel-body panel-body--scroll">
+                    <template lwc:if={isLoadingTransactions}>
+                        <div class="loading-wrap">
+                            <lightning-spinner size="medium" alternative-text="Cargando..."></lightning-spinner>
+                        </div>
+                    </template>
+                    <template lwc:elseif={hasTransactions}>
+                        <ul class="txn-list">
+                            <template for:each={transactions} for:item="txn">
+                                <li key={txn.Id} class="txn-item">
+                                    <div class={txn.dotClass}></div>
+                                    <div class="txn-info">
+                                        <div class="txn-label">{txn.displayLabel}</div>
+                                        <div class="txn-meta">{txn.formattedDate} &middot; {txn.Category__c}</div>
+                                    </div>
+                                    <div class={txn.amountClass}>{txn.formattedAmount}</div>
+                                    <button
+                                        class="txn-delete"
+                                        onclick={handleDeleteClick}
+                                        data-id={txn.Id}
+                                        data-name={txn.Name}
+                                        title="Eliminar">
+                                        &#215;
+                                    </button>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                    <template lwc:else>
+                        <div class="empty-state">
+                            <lightning-icon icon-name="utility:inbox" size="medium" class="empty-icon"></lightning-icon>
+                            <p>Sin transacciones este mes.</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── Modal: Nueva Transacción ─────────────────────────────────── -->
+        <!-- Clicking the semi-transparent overlay closes the modal;
+             stopPropagation on the inner div prevents the overlay click from triggering -->
+        <template lwc:if={showModal}>
+            <div class="overlay" onclick={handleCloseModal}>
+                <div class="modal" onclick={stopPropagation}>
+
+                    <div class="modal__header">
+                        <span class="modal__title">Nueva Transacción</span>
+                        <button class="modal__close" onclick={handleCloseModal}>&#215;</button>
+                    </div>
+
+                    <div class="modal__body">
+
+                        <!-- Tipo: toggle buttons that switch between Income and Expense categories -->
+                        <div class="type-selector">
+                            <button class={typeIngresoClass} onclick={handleTypeSelect} data-type="Ingreso">
+                                ↑ Ingreso
+                            </button>
+                            <button class={typeGastoClass} onclick={handleTypeSelect} data-type="Gasto">
+                                ↓ Gasto
+                            </button>
+                        </div>
+
+                        <!-- Monto -->
+                        <div class="form-group">
+                            <label class="form-label">Monto *</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                placeholder="0.00"
+                                min="0.01"
+                                step="0.01"
+                                value={form.amount}
+                                onchange={handleAmountChange} />
+                            <template lwc:if={formErrors.amount}>
+                                <span class="form-error">{formErrors.amount}</span>
+                            </template>
+                        </div>
+
+                        <!-- Categoría -->
+                        <div class="form-group">
+                            <label class="form-label">Categoría *</label>
+                            <lightning-combobox
+                                name="category"
+                                placeholder="Seleccionar categoría..."
+                                value={form.category}
+                                options={categoryOptions}
+                                onchange={handleCategoryChange}
+                                variant="label-hidden"
+                                class="fin-combobox">
+                            </lightning-combobox>
+                            <template lwc:if={formErrors.category}>
+                                <span class="form-error">{formErrors.category}</span>
+                            </template>
+                        </div>
+
+                        <!-- Fecha -->
+                        <div class="form-group">
+                            <label class="form-label">Fecha *</label>
+                            <input
+                                type="date"
+                                class="form-input"
+                                value={form.date}
+                                onchange={handleDateChange} />
+                            <template lwc:if={formErrors.date}>
+                                <span class="form-error">{formErrors.date}</span>
+                            </template>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div class="form-group">
+                            <label class="form-label">Descripción</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                placeholder="Nota opcional..."
+                                maxlength="255"
+                                value={form.description}
+                                onchange={handleDescriptionChange} />
+                        </div>
+
+                    </div>
+
+                    <div class="modal__footer">
+                        <button class="btn-cancel" onclick={handleCloseModal}>Cancelar</button>
+                        <button class={saveButtonClass} onclick={handleSave} disabled={isSaving}>
+                            <template lwc:if={isSaving}>Guardando...</template>
+                            <template lwc:else>Guardar</template>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </template>
+
+        <!-- ── Modal: Confirmar eliminación ────────────────────────────── -->
+        <!-- Separate small confirmation modal — the delete doesn't execute until the user confirms -->
+        <template lwc:if={showDeleteConfirm}>
+            <div class="overlay">
+                <div class="modal modal--sm">
+                    <div class="modal__header modal__header--danger">
+                        <span class="modal__title">Eliminar transacción</span>
+                    </div>
+                    <div class="modal__body">
+                        <p class="confirm-text">
+                            ¿Eliminar <strong>{pendingDeleteName}</strong>?
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+                    <div class="modal__footer">
+                        <button class="btn-cancel" onclick={handleCancelDelete}>Cancelar</button>
+                        <button class="btn-danger" onclick={handleConfirmDelete}>Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+    </div>
+</template>
