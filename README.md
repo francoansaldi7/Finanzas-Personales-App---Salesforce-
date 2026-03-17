@@ -1,19 +1,17 @@
-# To-Do App — Salesforce LWC
+# Finanzas Personales — Salesforce LWC
 
-A personal task management app built on Salesforce using Lightning Web Components (LWC), Apex, and Flow. Users can create, edit, complete, and delete their own tasks, with a filtered view of completed items.
+A personal finance tracker built on Salesforce using Lightning Web Components (LWC), Apex, and Flow. Users can log income and expenses, view a monthly balance summary, and browse their transaction history — all from a single dashboard.
 
 ---
 
 ## Features
 
-- Create tasks with a name and optional due date
-- Inline edit task names directly in the list
-- Mark tasks as complete or revert them back to pending
-- Delete tasks with a confirmation prompt
-- Filter completed tasks by: All, This Week, This Month
-- Toast notifications for all actions
-- Empty state messages when no tasks exist
-- Each user only sees their own tasks
+- Log income and expense transactions with amount, category, description, and date
+- Monthly balance summary (total income, total expenses, net balance)
+- Transaction history filterable by month
+- Each user only sees their own transactions
+- Automatic date assignment via Flow
+- Motivational quote rotator on the dashboard
 
 ---
 
@@ -21,23 +19,25 @@ A personal task management app built on Salesforce using Lightning Web Component
 
 | Layer | Name | Responsibility |
 |---|---|---|
-| LWC | `todoApp` | Parent container, two-column layout |
-| LWC | `todoPendingList` | Create, edit, complete, and delete pending tasks |
-| LWC | `todoCompletedList` | View, filter, uncomplete, and delete completed tasks |
-| Apex | `TaskController` | All CRUD operations via `@AuraEnabled` methods |
-| Flow | `AssignTodaysDateToTask` | Before-save trigger — sets `Completed_Date__c = TODAY()` when a task is completed |
+| LWC | `financeHome` | Main dashboard: monthly KPIs, transaction form, history list |
+| LWC | `motivationalQuotes` | Rotating motivational quotes displayed on the dashboard |
+| Apex | `FinanceController` | All CRUD and aggregation operations via `@AuraEnabled` methods |
+| Flow | `Finance_Asignar_Fecha` | Before-save trigger — sets `Date__c = TODAY()` when no date is provided |
 
 ---
 
-## Custom Object: `To_Do_Task__c`
+## Custom Object: `Finance_Transaction__c`
 
 | Field | API Name | Type | Description |
 |---|---|---|---|
-| Task Name | `Name` | Text | The task label |
-| Status | `Status__c` | Picklist | `Pending` or `Completed` |
-| Completed | `Completed__c` | Checkbox | Drives the Flow trigger |
-| Due Date | `Due_Date__c` | Date | Optional due date shown in pending list |
-| Completed Date | `Completed_Date__c` | Date | Set automatically by Flow on completion |
+| Transaction Name | `Name` | Text | Auto-generated label |
+| Type | `Type__c` | Picklist | `Ingreso` (income) or `Gasto` (expense) |
+| Amount | `Amount__c` | Currency | Transaction amount (must be positive) |
+| Signed Amount | `Signed_Amount__c` | Formula | Positive for income, negative for expenses |
+| Category | `Category__c` | Picklist | e.g. Alimentación, Transporte, Salario |
+| Description | `Description__c` | Text | Optional note |
+| Date | `Date__c` | Date | Transaction date, set automatically if blank |
+| Month / Year | `Month_Year__c` | Formula | Used for monthly grouping and filtering |
 
 ---
 
@@ -45,7 +45,7 @@ A personal task management app built on Salesforce using Lightning Web Component
 
 - [Salesforce CLI](https://developer.salesforce.com/tools/salesforcecli) installed
 - A Salesforce Developer org or active scratch org
-- [Node.js](https://nodejs.org/) (for running Jest tests locally, optional)
+- [Node.js](https://nodejs.org/) (optional, for running Jest tests locally)
 
 ---
 
@@ -60,14 +60,14 @@ sf org login web --set-default-dev-hub --alias MyDevHub
 **2. Clone the repository**
 
 ```bash
-git clone https://github.com/francoansaldi7/To-Do-App.git
-cd To-Do-App
+git clone https://github.com/francoansaldi7/Finanzas-Personales-App---Salesforce-.git
+cd Finanzas-Personales-App---Salesforce-
 ```
 
 **3. Create a scratch org**
 
 ```bash
-sf org create scratch --definition-file config/project-scratch-def.json --alias ToDoApp --set-default --duration-days 30
+sf org create scratch --definition-file config/project-scratch-def.json --alias FinanzasApp --set-default --duration-days 30
 ```
 
 **4. Push the source to the scratch org**
@@ -95,8 +95,8 @@ sf org login web --alias MyOrg
 **2. Clone the repository**
 
 ```bash
-git clone https://github.com/francoansaldi7/To-Do-App.git
-cd To-Do-App
+git clone https://github.com/francoansaldi7/Finanzas-Personales-App---Salesforce-.git
+cd Finanzas-Personales-App---Salesforce-
 ```
 
 **3. Deploy the metadata**
@@ -111,7 +111,7 @@ sf project deploy start --target-org MyOrg
 
 1. In your org, go to **Setup → Lightning App Builder**
 2. Open or create a Lightning page (App Page or Home Page)
-3. Drag the **`todoApp`** component onto the page
+3. Drag the **`financeHome`** component onto the page
 4. Save and **Activate** the page
 
 ---
@@ -121,14 +121,7 @@ sf project deploy start --target-org MyOrg
 **Apex tests**
 
 ```bash
-sf apex run test --class-names TaskControllerTest --result-format human --output-dir test-results
-```
-
-**LWC Jest tests** (requires Node.js)
-
-```bash
-npm install
-npm test
+sf apex run test --class-names FinanceControllerTest --result-format human --output-dir test-results
 ```
 
 ---
@@ -138,21 +131,31 @@ npm test
 ```
 force-app/main/default/
 ├── classes/
-│   ├── TaskController.cls
-│   └── TaskControllerTest.cls
+│   ├── FinanceController.cls
+│   └── FinanceControllerTest.cls
 ├── lwc/
-│   ├── todoApp/
-│   ├── todoPendingList/
-│   └── todoCompletedList/
+│   ├── financeHome/
+│   └── motivationalQuotes/
 ├── objects/
-│   └── To_Do_Task__c/
-│       └── fields/
-│           ├── Completed__c.field-meta.xml
-│           ├── Completed_Date__c.field-meta.xml
-│           ├── Due_Date__c.field-meta.xml
-│           └── Status__c.field-meta.xml
-└── flows/
-    └── AssignTodaysDateToTask.flow-meta.xml
+│   └── Finance_Transaction__c/
+│       ├── fields/
+│       │   ├── Amount__c.field-meta.xml
+│       │   ├── Category__c.field-meta.xml
+│       │   ├── Date__c.field-meta.xml
+│       │   ├── Description__c.field-meta.xml
+│       │   ├── Month_Year__c.field-meta.xml
+│       │   ├── Signed_Amount__c.field-meta.xml
+│       │   └── Type__c.field-meta.xml
+│       ├── listViews/
+│       └── validationRules/
+├── flows/
+│   └── Finance_Asignar_Fecha.flow-meta.xml
+├── applications/
+│   └── Personal_Finance.app-meta.xml
+├── tabs/
+│   └── Finance_Transaction__c.tab-meta.xml
+└── permissionsets/
+    └── Finance_Full_Access.permissionset-meta.xml
 ```
 
 ---
