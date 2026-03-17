@@ -11,7 +11,6 @@ A personal finance tracker built on Salesforce using Lightning Web Components (L
 - Transaction history filterable by month
 - Each user only sees their own transactions
 - Automatic date assignment via Flow
-- Motivational quote rotator on the dashboard
 
 ---
 
@@ -20,7 +19,6 @@ A personal finance tracker built on Salesforce using Lightning Web Components (L
 | Layer | Name | Responsibility |
 |---|---|---|
 | LWC | `financeHome` | Main dashboard: monthly KPIs, transaction form, history list |
-| LWC | `motivationalQuotes` | Rotating motivational quotes displayed on the dashboard |
 | Apex | `FinanceController` | All CRUD and aggregation operations via `@AuraEnabled` methods |
 | Flow | `Finance_Asignar_Fecha` | Before-save trigger — sets `Date__c = TODAY()` when no date is provided |
 
@@ -134,8 +132,7 @@ force-app/main/default/
 │   ├── FinanceController.cls
 │   └── FinanceControllerTest.cls
 ├── lwc/
-│   ├── financeHome/
-│   └── motivationalQuotes/
+│   └── financeHome/
 ├── objects/
 │   └── Finance_Transaction__c/
 │       ├── fields/
